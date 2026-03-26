@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "RndRecord": {
+      "title": "RndRecord",
+      "description": "A record of an R&D test or analysis.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "YYYY-MM-DD" },
+        "partCode": { "type": "string" },
+        "engineer": { "type": "string" },
+        "taskType": { "type": "string", "enum": ["CAE해석", "강도시험", "내구시험", "설계검토", "기타"] },
+        "result": { "type": "string", "enum": ["합격", "불합격", "진행중"] },
+        "safetyFactor": { "type": "number", "description": "Optional safety factor" },
+        "notes": { "type": "string", "description": "Optional notes" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "partCode", "engineer", "taskType", "result", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/rnd_records/{recordId}": {
+      "schema": { "$ref": "#/entities/RndRecord" },
+      "description": "Collection of R&D records."
+    }
+  }
+}

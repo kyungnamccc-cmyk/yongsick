@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: rnd_records
+    // Document ID: auto-generated
+    // Fields:
+    //   - date: string (required, YYYY-MM-DD)
+    //   - partCode: string (required)
+    //   - engineer: string (required)
+    //   - taskType: string (required, enum)
+    //   - result: string (required, enum)
+    //   - safetyFactor: number (optional)
+    //   - notes: string (optional)
+    //   - createdAt: timestamp (required)
+    //   - updatedAt: timestamp (required)
+    // ===============================================================
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidString(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    function isValidRndRecord() {
+      let data = request.resource.data;
+      let requiredFields = ['date', 'partCode', 'engineer', 'taskType', 'result', 'createdAt', 'updatedAt'];
+      
+      return hasRequiredFields(requiredFields) &&
+             isValidDateString(data.date) &&
+             isValidString('partCode', 1, 50) &&
+             isValidString('engineer', 1, 50) &&
+             data.taskType in ['CAE해석', '강도시험', '내구시험', '설계검토', '기타'] &&
+             data.result in ['합격', '불합격', '진행중'] &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             (!('safetyFactor' in data) || data.safetyFactor is number) &&
+             (!('notes' in data) || isValidString('notes', 0, 1000));
+    }
+
+    match /rnd_records/{recordId} {
+      // Allow unauthenticated read/write as requested by PRD (internal network assumption)
+      allow read: if true;
+      allow create: if isValidRndRecord();
+      allow update: if isValidRndRecord() && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if true;
+    }
+  }
+}
